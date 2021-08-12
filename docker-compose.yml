@@ -1,0 +1,81 @@
+version: '2'
+
+# Example docker-compose config file for production use
+# Container image on Docker Hub: https://hub.docker.com/r/photoprism/photoprism/
+# To keep photoprism running, add "restart: always"
+#
+# Usage: docker-compose up
+
+services:
+  photoprism:
+    container_name: photoprism
+    image: photoprism/photoprism:latest
+    restart: unless-stopped
+    ports:
+      - 2091:2342 # [local port]:[container port]
+      # - 2343:2343 # Database (built-in TiDB)
+    environment: # Run "photoprism help" and "photoprism config" too see all config options and current values
+      PHOTOPRISM_URL: "http://localhost:2342/"
+      PHOTOPRISM_TITLE: "PhotoPrism"
+      PHOTOPRISM_SUBTITLE: "Browse your life"
+      PHOTOPRISM_DESCRIPTION: "Personal Photo Management powered by Go and Google TensorFlow. Free and open-source."
+      PHOTOPRISM_AUTHOR: "Photoprism"
+      PHOTOPRISM_TWITTER: "@browseyourlife"
+      PHOTOPRISM_UPLOAD_NSFW: "true"
+      PHOTOPRISM_DETECT_NSFW: "false"
+      PHOTOPRISM_EXPERIMENTAL: "false"
+      PHOTOPRISM_DEBUG: "false"
+      PHOTOPRISM_READONLY: "true"
+      PHOTOPRISM_PUBLIC: "false"
+      PHOTOPRISM_DISABLE_SETTINGS: "false"
+      PHOTOPRISM_HTTP_HOST: "0.0.0.0"
+      PHOTOPRISM_HTTP_PORT: 2342
+      PHOTOPRISM_TIDB_HOST: "0.0.0.0"
+      PHOTOPRISM_TIDB_PORT: 2343 # Port for built-in TiDB SQL server (driver "tidb")
+      PHOTOPRISM_TIDB_PASSWORD: "photoprism" # Plain text only (username "root")
+      PHOTOPRISM_ADMIN_PASSWORD: "ll.Photoprism.556" # Plain text or bcrypt hash (escape "$" with "$$")
+      PHOTOPRISM_WEBDAV_PASSWORD: "ll.Photoprism.556" # Plain text only (username "photoprism")
+      PHOTOPRISM_DATABASE_DRIVER: "tidb" # Change to "mysql" for external MySQL or MariaDB
+      PHOTOPRISM_DATABASE_DSN: "root:photoprism@tcp(localhost:2343)/photoprism?parseTime=true"
+      PHOTOPRISM_ORIGINALS_LIMIT: 9999999
+      # PHOTOPRISM_DATABASE_DRIVER: "mysql" # Using MariaDB or MySQL instead of the internal TiDB is optional
+      # PHOTOPRISM_DATABASE_DSN: "photoprism:photoprism@tcp(photoprism-db:3306)/photoprism?parseTime=true"
+      # PHOTOPRISM_THUMB_QUALITY: 95 # High-quality thumbnails (optional, default JPEG quality is 90)
+      # PHOTOPRISM_THUMB_SIZE: 3840 # For retina screens, default is 2048
+      # PHOTOPRISM_THUMB_FILTER: "lanczos" # Resample filter, best to worst: blackman, lanczos, cubic, linear
+    volumes:
+      #- "/mnt/camera/:/photoprism/originals/Camera" # [local path]:[container path]
+      #- "/docker/photoprism/import:/photoprism/import" # [local path]:[container path] (optional)
+      - "photoprism-config:/photoprism/config" # keep settings
+      - "photoprism-cache:/photoprism/cache" # keep thumbnail cache
+      - "photoprism-database:/photoprism/database" # TiDB database files, remove if you use MariaDB or MySQL
+      - "photoprism-storage:/photoprism/storage"
+      - "photoprism_photos:/photoprism/originals"
+
+  # photoprism-db: # Uncomment, if you want to use MariaDB instead of the internal TiDB
+  #  image: mariadb:10.5 # Alternatively mysql:8.0
+  #  restart: unless-stopped
+  #  command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=1024
+  #  volumes:
+  #    - "photoprism-database:/var/lib/mysql"
+  #  environment:
+  #    MYSQL_ROOT_PASSWORD: photoprism
+  #    MYSQL_USER: photoprism
+  #    MYSQL_PASSWORD: photoprism
+  #    MYSQL_DATABASE: photoprism
+
+volumes:
+  photoprism-config:
+    driver: local
+  photoprism-cache:
+    driver: local
+  photoprism-database:
+    driver: local
+  photoprism-storage: # config and thumbnails
+    driver: local
+  photoprism_photos:
+    driver: local
+    driver_opts:
+      type: cifs
+      o: ${CIFS_OPTS}
+      device: "//10.0.0.20/Camera"
