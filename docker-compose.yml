@@ -78,4 +78,4 @@ volumes:
     driver_opts:
       type: cifs
       o: ${CIFS_OPTS}
-      device: "//10.0.0.20/Camera"
+      device: "//10.0.0.20/camera"
